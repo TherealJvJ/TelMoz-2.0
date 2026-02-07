@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>{% block title %}Telmoz{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="{{ url_for('index') }}" class="logo">Telmoz</a>
+            <nav class="nav">
+                <a href="{{ url_for('index') }}">Início</a>
+                {% if not current_user.is_authenticated %}
+                <button class="cart-btn" id="cartBtn" aria-label="Carrinho">
+                    🛒 <span class="cart-badge empty" id="cartBadge">0</span>
+                </button>
+                {% endif %}
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('admin_dashboard') }}">Painel Admin</a>
+                    <a href="{{ url_for('admin_logout') }}">Sair</a>
+                {% else %}
+                    <a href="{{ url_for('admin_login') }}">Admin</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <main class="main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Carrinho lateral -->
+    {% if not current_user.is_authenticated %}
+    <div class="cart-overlay" id="cartOverlay"></div>
+    <aside class="cart-drawer" id="cartDrawer">
+        <div class="cart-header">
+            <h2>🛒 Carrinho</h2>
+            <button class="cart-close" id="cartClose" aria-label="Fechar">×</button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <div class="cart-empty" id="cartEmpty">O carrinho está vazio.</div>
+        </div>
+        <div class="cart-footer" id="cartFooter" style="display: none;">
+            <div class="cart-total" id="cartTotal">Total: MT 0,00</div>
+            <a href="#" class="btn btn-whatsapp" id="cartCheckout" style="width: 100%; text-align: center;">
+                Comprar no WhatsApp
+            </a>
+        </div>
+    </aside>
+    {% endif %}
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; {{ current_year }} Telmoz - Vendas & Entregas Multiserviços</p>
+        </div>
+    </footer>
+
+    <script>
+        window.TELMOZ_CONFIG = {
+            whatsappNumber: "{{ whatsapp_number }}"
+        };
+    </script>
+    {% if not current_user.is_authenticated %}
+    <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+    {% endif %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

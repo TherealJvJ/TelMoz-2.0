@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if category else 'Adicionar' }} Categoria - Telmoz{% endblock %}
+
+{% block content %}
+<div class="container admin-page">
+    <h1>{{ 'Editar' if category else 'Adicionar' }} Categoria</h1>
+
+    <form method="POST">
+        <div class="form-group">
+            <label for="name">Nome da Categoria</label>
+            <input type="text" id="name" name="name" 
+                   value="{{ category.name if category else '' }}" 
+                   required placeholder="Ex: Eletrónica, Moda...">
+        </div>
+        <div class="admin-actions">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

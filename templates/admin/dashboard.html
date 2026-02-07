@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Telmoz - Painel Admin{% endblock %}
+
+{% block content %}
+<div class="container admin-page">
+    <h1>Painel Administrativo</h1>
+
+    <div class="admin-actions">
+        <a href="{{ url_for('add_category') }}" class="btn btn-secondary">+ Adicionar Categoria</a>
+        <a href="{{ url_for('add_product') }}" class="btn btn-primary">+ Adicionar Produto</a>
+    </div>
+
+    <section class="admin-section">
+        <h2>Categorias</h2>
+        {% if categories %}
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in categories %}
+                    <tr>
+                        <td>{{ cat.id }}</td>
+                        <td>{{ cat.name }}</td>
+                        <td>
+                            <div class="actions">
+                                <a href="{{ url_for('edit_category', id=cat.id) }}" class="btn btn-secondary btn-small">Editar</a>
+                                <form action="{{ url_for('delete_category', id=cat.id) }}" method="POST" style="display:inline;" 
+                                      onsubmit="return confirm('Eliminar esta categoria?');">
+                                    <button type="submit" class="btn btn-danger btn-small">Eliminar</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>Nenhuma categoria. <a href="{{ url_for('add_category') }}">Adicione a primeira.</a></p>
+        {% endif %}
+    </section>
+
+    <section class="admin-section">
+        <h2>Produtos</h2>
+        {% if products %}
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Preço</th>
+                        <th>Quantidade</th>
+                        <th>Categoria</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prod in products %}
+                    <tr>
+                        <td>{{ prod.id }}</td>
+                        <td>{{ prod.name }}</td>
+                        <td>MT {{ "%.2f"|format(prod.price) }}</td>
+                        <td>
+                            <form action="{{ url_for('update_product_quantity', id=prod.id) }}" method="POST" class="quantity-form">
+                                <input type="number" name="quantity" value="{{ prod.quantity }}" min="0" class="quantity-input">
+                                <button type="submit" class="btn btn-secondary btn-small">Atualizar</button>
+                            </form>
+                        </td>
+                        <td>{{ prod.category.name }}</td>
+                        <td>
+                            <div class="actions">
+                                <a href="{{ url_for('edit_product', id=prod.id) }}" class="btn btn-secondary btn-small">Editar</a>
+                                <form action="{{ url_for('delete_product', id=prod.id) }}" method="POST" style="display:inline;"
+                                      onsubmit="return confirm('Eliminar este produto?');">
+                                    <button type="submit" class="btn btn-danger btn-small">Eliminar</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>Nenhum produto. <a href="{{ url_for('add_product') }}">Adicione o primeiro.</a></p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

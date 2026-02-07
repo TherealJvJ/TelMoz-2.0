@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Telmoz - Catálogo de Produtos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <section class="hero">
+        <h1>Bem-vindo à Telmoz</h1>
+        <p>Vendas & Entregas Multiserviços - Encomende pelo WhatsApp</p>
+    </section>
+
+    {% if categories %}
+    <nav class="categories">
+        <a href="{{ url_for('index') }}" class="{{ 'active' if not active_category else '' }}">Todos</a>
+        {% for cat in categories %}
+        <a href="{{ url_for('category_products', category_id=cat.id) }}" 
+           class="{{ 'active' if active_category and active_category.id == cat.id else '' }}">
+            {{ cat.name }}
+        </a>
+        {% endfor %}
+    </nav>
+    {% endif %}
+
+    {% if products %}
+    <div class="products-grid">
+        {% for product in products %}
+        <article class="product-card" data-product-id="{{ product.id }}" 
+                 data-product-name="{{ product.name }}" 
+                 data-product-price="{{ product.price }}"
+                 data-product-quantity="{{ product.quantity }}">
+            {% if product.image_url %}
+            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image">
+            {% else %}
+            <div class="product-image-placeholder">📦</div>
+            {% endif %}
+            <div class="product-info">
+                <h3 class="product-name">{{ product.name }}</h3>
+                {% if product.description %}
+                <p class="product-description">{{ product.description }}</p>
+                {% endif %}
+                <span class="product-quantity">Disponível: {{ product.quantity }} un.</span>
+                <span class="product-price">MT {{ "%.2f"|format(product.price) }}</span>
+                <div class="product-actions">
+                    {% if product.quantity > 0 %}
+                    <button type="button" class="btn-add-cart" data-product-id="{{ product.id }}">
+                        + Carrinho
+                    </button>
+                    <a href="{{ whatsapp_link(product) }}" target="_blank" rel="noopener" class="btn btn-whatsapp">
+                        Comprar
+                    </a>
+                    {% else %}
+                    <span class="btn-disabled">Esgotado</span>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Nenhum produto disponível no momento.</p>
+        <p>Volte em breve!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
