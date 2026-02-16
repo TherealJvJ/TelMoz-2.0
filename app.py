@@ -38,22 +38,81 @@ def inject_year():
 def index():
     """Página inicial com todos os produtos"""
     categories = Category.query.all()
-    products = Product.query.all()
-    return render_template('index.html', categories=categories, products=products)
+    
+    # Filtros de pesquisa
+    search_query = request.args.get('search', '').strip()
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+    
+    # Query base
+    query = Product.query
+    
+    # Filtro por nome
+    if search_query:
+        query = query.filter(Product.name.ilike(f'%{search_query}%'))
+    
+    # Filtro por preço mínimo
+    if min_price is not None:
+        query = query.filter(Product.price >= min_price)
+    
+    # Filtro por preço máximo
+    if max_price is not None:
+        query = query.filter(Product.price <= max_price)
+    
+    products = query.all()
+    
+    return render_template('index.html', 
+                         categories=categories, 
+                         products=products,
+                         search_query=search_query,
+                         min_price=min_price,
+                         max_price=max_price)
 
 
 @app.route('/categoria/<int:category_id>')
 def category_products(category_id):
     """Produtos por categoria"""
     category = Category.query.get_or_404(category_id)
-    products = Product.query.filter_by(category_id=category_id).all()
+    
+    # Filtros de pesquisa
+    search_query = request.args.get('search', '').strip()
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+    
+    # Query base com categoria
+    query = Product.query.filter_by(category_id=category_id)
+    
+    # Filtro por nome
+    if search_query:
+        query = query.filter(Product.name.ilike(f'%{search_query}%'))
+    
+    # Filtro por preço mínimo
+    if min_price is not None:
+        query = query.filter(Product.price >= min_price)
+    
+    # Filtro por preço máximo
+    if max_price is not None:
+        query = query.filter(Product.price <= max_price)
+    
+    products = query.all()
     categories = Category.query.all()
-    return render_template('index.html', categories=categories, products=products, active_category=category)
+    
+    return render_template('index.html', 
+                         categories=categories, 
+                         products=products, 
+                         active_category=category,
+                         search_query=search_query,
+                         min_price=min_price,
+                         max_price=max_price)
 
 
 def get_whatsapp_url(product):
     """Gera URL do WhatsApp com mensagem do produto"""
-    message = product.whatsapp_message or f"Olá! Gostaria de encomendar: *{product.name}* - MT {product.price:.2f}"
+    price_display = product.final_price if product.discount_percent > 0 else product.price
+    price_text = f"MT {price_display:.2f}"
+    if product.discount_percent > 0:
+        price_text += f" (desconto de {product.discount_percent:.0f}%)"
+    message = product.whatsapp_message or f"Olá! Gostaria de encomendar: *{product.name}* - {price_text}"
     # Codifica a mensagem para URL
     import urllib.parse
     encoded_message = urllib.parse.quote(message)
@@ -86,6 +145,92 @@ def admin_login():
             flash('Utilizador ou palavra-passe incorretos.', 'error')
     
     return render_template('admin/login.html')
+
+
+@app.route('/admin/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Esqueci a senha - solicitar reset"""
+    if current_user.is_authenticated:
+        return redirect(url_for('admin_dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        admin = Admin.query.filter_by(email=email).first()
+        
+        if admin:
+            token = admin.generate_reset_token()
+            db.session.commit()
+            
+            # Em produção, aqui enviaria email com o link
+            reset_url = url_for('reset_password', token=token, _external=True)
+            flash(f'Link de recuperação gerado! (Em produção, será enviado por email)\n{reset_url}', 'success')
+            return redirect(url_for('admin_login'))
+        else:
+            flash('Email não encontrado.', 'error')
+    
+    return render_template('admin/forgot_password.html')
+
+
+@app.route('/admin/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Reset de senha com token"""
+    if current_user.is_authenticated:
+        return redirect(url_for('admin_dashboard'))
+    
+    admin = Admin.query.filter_by(reset_token=token).first()
+    
+    if not admin or not admin.reset_token_expires or admin.reset_token_expires < datetime.utcnow():
+        flash('Token inválido ou expirado.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm = request.form.get('confirm_password')
+        
+        if password != confirm:
+            flash('As senhas não coincidem.', 'error')
+        elif len(password) < 6:
+            flash('A senha deve ter pelo menos 6 caracteres.', 'error')
+        else:
+            admin.set_password(password)
+            admin.reset_token = None
+            admin.reset_token_expires = None
+            db.session.commit()
+            flash('Senha alterada com sucesso!', 'success')
+            return redirect(url_for('admin_login'))
+    
+    return render_template('admin/reset_password.html', token=token)
+
+
+@app.route('/admin/create-admin', methods=['GET', 'POST'])
+@login_required
+def create_admin():
+    """Criar novo administrador (requer login)"""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm = request.form.get('confirm_password')
+        
+        if not username or not email or not password:
+            flash('Todos os campos são obrigatórios.', 'error')
+        elif password != confirm:
+            flash('As senhas não coincidem.', 'error')
+        elif len(password) < 6:
+            flash('A senha deve ter pelo menos 6 caracteres.', 'error')
+        elif Admin.query.filter_by(username=username).first():
+            flash('Nome de utilizador já existe.', 'error')
+        elif Admin.query.filter_by(email=email).first():
+            flash('Email já está em uso.', 'error')
+        else:
+            admin = Admin(username=username, email=email)
+            admin.set_password(password)
+            db.session.add(admin)
+            db.session.commit()
+            flash(f'Administrador "{username}" criado com sucesso!', 'success')
+            return redirect(url_for('admin_dashboard'))
+    
+    return render_template('admin/create_admin.html')
 
 
 @app.route('/admin/logout')
@@ -164,6 +309,7 @@ def add_product():
         name = request.form.get('name')
         description = request.form.get('description')
         price = request.form.get('price')
+        discount_percent = request.form.get('discount_percent', 0)
         category_id = request.form.get('category_id')
         image_url = request.form.get('image_url')
         whatsapp_message = request.form.get('whatsapp_message')
@@ -174,6 +320,7 @@ def add_product():
                 name=name,
                 description=description,
                 price=float(price),
+                discount_percent=float(discount_percent) if discount_percent else 0.0,
                 quantity=int(quantity) if quantity else 0,
                 category_id=int(category_id),
                 image_url=image_url or None,
@@ -198,6 +345,7 @@ def edit_product(id):
         name = request.form.get('name')
         description = request.form.get('description')
         price = request.form.get('price')
+        discount_percent = request.form.get('discount_percent', 0)
         category_id = request.form.get('category_id')
         image_url = request.form.get('image_url')
         whatsapp_message = request.form.get('whatsapp_message')
@@ -207,6 +355,7 @@ def edit_product(id):
             product.name = name
             product.description = description
             product.price = float(price)
+            product.discount_percent = float(discount_percent) if discount_percent else 0.0
             product.quantity = int(quantity) if quantity else 0
             product.category_id = int(category_id)
             product.image_url = image_url or None
@@ -257,12 +406,39 @@ def migrate_add_quantity():
         except Exception:
             db.session.rollback()
 
+def migrate_add_discount():
+    """Adiciona coluna discount_percent se não existir (para bases de dados existentes)"""
+    with app.app_context():
+        from sqlalchemy import text
+        try:
+            db.session.execute(text("ALTER TABLE products ADD COLUMN discount_percent FLOAT DEFAULT 0.0 NOT NULL"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+def migrate_add_reset_fields():
+    """Adiciona campos de reset de senha se não existirem"""
+    with app.app_context():
+        from sqlalchemy import text
+        try:
+            db.session.execute(text("ALTER TABLE admins ADD COLUMN reset_token VARCHAR(100)"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        try:
+            db.session.execute(text("ALTER TABLE admins ADD COLUMN reset_token_expires DATETIME"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
 
 def create_admin_if_not_exists():
     """Cria um admin padrão se não existir"""
     with app.app_context():
         db.create_all()
         migrate_add_quantity()
+        migrate_add_discount()
+        migrate_add_reset_fields()
         if not Admin.query.first():
             admin = Admin(username='admin', email='admin@telmoz.com')
             admin.set_password('admin123')

@@ -15,6 +15,11 @@
             <input type="password" id="password" name="password" required>
         </div>
         <button type="submit" class="btn btn-primary">Entrar</button>
+        <div style="text-align: center; margin-top: 1rem;">
+            <a href="{{ url_for('forgot_password') }}" style="color: var(--green-dark); text-decoration: none; font-size: 0.9rem;">
+                Esqueci a senha
+            </a>
+        </div>
     </form>
 </div>
 {% endblock %}

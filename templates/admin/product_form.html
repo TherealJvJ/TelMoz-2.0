@@ -24,6 +24,13 @@
                    required placeholder="0.00">
         </div>
         <div class="form-group">
+            <label for="discount_percent">Desconto (%)</label>
+            <input type="number" id="discount_percent" name="discount_percent" step="0.1" min="0" max="100"
+                   value="{{ "%.1f"|format(product.discount_percent) if product and product.discount_percent else '0' }}" 
+                   placeholder="0">
+            <small style="color: var(--text-muted);">Ex: 10 para 10% de desconto</small>
+        </div>
+        <div class="form-group">
             <label for="quantity">Quantidade em stock</label>
             <input type="number" id="quantity" name="quantity" min="0"
                    value="{{ product.quantity if product else 0 }}" 

@@ -4,17 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>{% block title %}Telmoz{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <header class="header">
         <div class="container">
-            <a href="{{ url_for('index') }}" class="logo">Telmoz</a>
+            <a href="{{ url_for('index') }}" class="logo">
+                <img src="{{ url_for('static', filename='images/logo_white.png') }}" alt="Telmoz Logo" class="logo-img">
+                <span>Telmoz</span>
+            </a>
             <nav class="nav">
                 <a href="{{ url_for('index') }}">Início</a>
                 {% if not current_user.is_authenticated %}
                 <button class="cart-btn" id="cartBtn" aria-label="Carrinho">
-                    🛒 <span class="cart-badge empty" id="cartBadge">0</span>
+                    <svg class="cart-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                    <span class="cart-badge empty" id="cartBadge">0</span>
                 </button>
                 {% endif %}
                 {% if current_user.is_authenticated %}
@@ -46,7 +55,14 @@
     <div class="cart-overlay" id="cartOverlay"></div>
     <aside class="cart-drawer" id="cartDrawer">
         <div class="cart-header">
-            <h2>🛒 Carrinho</h2>
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 0.5rem;">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+                Carrinho
+            </h2>
             <button class="cart-close" id="cartClose" aria-label="Fechar">×</button>
         </div>
         <div class="cart-items" id="cartItems">
